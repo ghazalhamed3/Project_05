@@ -1,0 +1,36 @@
+==36353== Memcheck, a memory error detector
+==36353== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==36353== Using Valgrind-3.17.0.GIT-lbmacos and LibVEX; rerun with -h for copyright info
+==36353== Command: ./Project04 input_4.txt
+==36353== Parent PID: 36296
+==36353== 
+==36353== 
+==36353== HEAP SUMMARY:
+==36353==     in use at exit: 18,157 bytes in 163 blocks
+==36353==   total heap usage: 1,315 allocs, 1,152 frees, 135,211 bytes allocated
+==36353== 
+==36353== 2,048 bytes in 1 blocks are definitely lost in loss record 35 of 38
+==36353==    at 0x1001D5635: malloc (in /usr/local/Cellar/valgrind/HEAD-adaae87/lib/valgrind/vgpreload_memcheck-amd64-darwin.so)
+==36353==    by 0x10088FE95: class_setWeakIvarLayout (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x10088FE26: class_setWeakIvarLayout (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x100893BF9: _objc_atfork_parent (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x100881742: property_copyAttributeList (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x1008771E7: NXMapRemove (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x100889BD2: attachCategories(objc_class*, locstamped_category_t const*, unsigned int, int) (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x1008896C6: objc_class::mangledName() (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x10088969F: objc_class::mangledName() (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x10088969F: objc_class::mangledName() (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x10088969F: objc_class::mangledName() (in /usr/lib/libobjc.A.dylib)
+==36353==    by 0x100875406: objc_opt::objc_stringhash_t::getIndex(char const*) const (in /usr/lib/libobjc.A.dylib)
+==36353== 
+==36353== LEAK SUMMARY:
+==36353==    definitely lost: 2,048 bytes in 1 blocks
+==36353==    indirectly lost: 0 bytes in 0 blocks
+==36353==      possibly lost: 0 bytes in 0 blocks
+==36353==    still reachable: 4,096 bytes in 1 blocks
+==36353==         suppressed: 12,013 bytes in 161 blocks
+==36353== Reachable blocks (those to which a pointer was found) are not shown.
+==36353== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==36353== 
+==36353== For lists of detected and suppressed errors, rerun with: -s
+==36353== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 5 from 5)
