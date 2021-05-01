@@ -2,7 +2,7 @@
 #define DICTIONARY_HPP
 
 #include <stdexcept>
-#include "Stack.hpp"
+#include "stack.hpp"
 
 #define DICTIONARY_ALLOCATED_BLOCK 0x10
 
@@ -67,7 +67,7 @@ public:
 template<typename KeyType, typename ValueType>
 Dictionary<KeyType, ValueType>::Dictionary()
 {
-    dataptr = new Node<KeyType, ValueType> [_allocated];
+    _dataptr = new Node<KeyType, ValueType> [_allocated];
     for(int i = 0; i < _allocated; i++)
     {
         _dataptr[i].key = -1;

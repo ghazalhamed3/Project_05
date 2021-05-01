@@ -3,7 +3,7 @@
 
 
 #include "dictionary.hpp"
-#include "Stack.hpp"
+#include "stack.hpp"
 #include "entity.hpp"
 
 

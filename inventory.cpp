@@ -37,13 +37,20 @@ Item Inventory::LootAnItem(uint32_t uid)
 
 void Inventory::LootAnotherInventory(Inventory & inventory)
 {
-    Vector<uint32_t> itemKeys = inventory._inventoryData.Keys();
-
-    for(int i = 0; i < itemKeys.Count(); i ++)
+  
+    Stack<uint32_t> keys = inventory._inventoryData.Keys();
+    if(keys.IsEmpty())
     {
-        Item lootedItem = inventory._inventoryData.At(itemKeys.At(i));
-        _inventoryData.Insert(lootedItem.UID(), lootedItem);
-        inventory._inventoryData.Remove(itemKeys.At(i));
+        return;
+    }
+    else
+    {
+        while(!keys.IsEmpty())
+        {
+            uint32_t key = keys.PopItem();
+            AddItemToInventory(inventory.LootAnItem(key));
+
+        }
     }
 
 }
@@ -61,10 +68,11 @@ bool Inventory::IsEmpty() const
 // print its contents though the Item::PrintData()
 void Inventory::PrintInventory() const
 {
-    Vector<uint32_t> keys = _inventoryData.Keys();
-    for(int i = 0; i < keys.Count(); i ++)
+ 
+    Stack<uint32_t> keys = _inventoryData.Keys();
+    while(!keys.IsEmpty())
     {
-        uint32_t key = keys.At(i);
+        uint32_t key = keys.PopItem();
         std::cout << _inventoryData.At(key) << std::endl;
     }
 }
