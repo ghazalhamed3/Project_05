@@ -10,7 +10,7 @@
 struct EntityNode
 {
     Entity *data = nullptr;
-    
+     
     EntityNode *_nextItem = nullptr;
 };
 

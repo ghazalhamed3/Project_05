@@ -57,7 +57,7 @@ void Inventory::LootAnotherInventory(Inventory & inventory)
 
 
 bool Inventory::IsEmpty() const
-{
+{ 
     return _inventoryData.IsEmpty();
 
 }

@@ -2,7 +2,7 @@
 #define DICTIONARY_HPP
 
 #include <stdexcept>
-#include "stack.hpp"
+#include "stack.hpp" 
 
 #define DICTIONARY_ALLOCATED_BLOCK 0x10
 

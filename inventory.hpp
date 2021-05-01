@@ -10,7 +10,7 @@ class Inventory
 {
 public: 
     Inventory() = default;
-    ~Inventory();
+    ~Inventory(); 
 
     void Init(JsonItemBuilder &jsonBuilder, const std::vector<int> &uids);
     Item LootAnItem(uint32_t uid);
