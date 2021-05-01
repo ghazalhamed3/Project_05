@@ -6,51 +6,32 @@ Encounter::Encounter()
 
 }
 
-
-// implement
-// delete all entities within this list.
-// YOU MUST EXPLICITLY DELETE ALL ENTITIES
-// SINCE OUR DICTIONARY HOLDS POINTERS
 Encounter::~Encounter()
 {
-    Vector<uint32_t> keys = _encounterDictionary.Keys();
-    for(int i = 0; i < keys.Count(); i ++)
+     
+    Stack<uint32_t> keys = _encounterDictionary.Keys();
+    while(!_encounterDictionary.IsEmpty())
     {
-        Entity * toDelete = _encounterDictionary.At(keys.At(i));
-        delete toDelete;
+        uint32_t key = keys.PopItem();
+        Entity * remove = _encounterDictionary.Remove(key);
+        delete remove;
     }
 
 
 }
 
-// implement
-// inserts a new Entity node with the entity parameter as its
-// data.
-// HINT: ALL ITEMS ARE INSERTED TO THE BACK OF THIS LIST.
-// HINT: You do NOT have a _lastItem in this list, so you will
-//       have to locate it every time you add an item to the 
-//       back of the list.
 void Encounter::AddEntity(Entity *entity)
 {
-    if(!_encounterDictionary.Insert(entity->UID(), entity))
-    {
-        std::cout << "FAILED TO ADD ENTITY: " << entity->UID() << std::endl;
-    }
+    _encounterDictionary.Insert(entity->UID(), entity);
 }
 
 
-// implement
-// output only the specific entities status
-// if the entity does not exist, call PrintBadAccessError with
-// the entityID in question.
-// HINT: use findEntity to find the correct entity.
-// HINT: use Entity::OutputStatus() to print the entity's status
 void Encounter::PrintEntityStatus(uint32_t entityID) const
 {
+ 
     if(_encounterDictionary.Contains(entityID))
     {
-        Entity * tmp = _encounterDictionary.At(entityID);
-        tmp->OutputStatus();        
+        _encounterDictionary.At(entityID)->OutputStatus();    
 
 
     }
@@ -60,26 +41,26 @@ void Encounter::PrintEntityStatus(uint32_t entityID) const
     }    
 }
 
-// implement
-// print the status of all entities in the encounter
-// between each unit, call Bars() to print bars to make the
-// output better
-// HINT: You are going to use Entity::OutputStatus() 
+
 void Encounter::PrintAllStatuses() const
 {
-    Vector<uint32_t> keys = _encounterDictionary.Keys();
-    for(int i = 0; i < keys.Count(); i ++)
+    Stack<uint32_t> keys = _encounterDictionary.Keys();
+    
+    if (keys.IsEmpty())
     {
-        Entity * entity = _encounterDictionary.At(keys.At(i));
-
-        if(entity != nullptr)
+        return;
+    }
+    else
+    {
+        while(!keys.IsEmpty())
         {
-            entity->OutputStatus();
-        }
-
-        if(i < keys.Count() - 1)
-        {
-            Bars();
+            uint32_t i = keys.PopItem();
+            _encounterDictionary.At(i)->OutputStatus();
+            if(!keys.IsEmpty())
+            {
+                Bars();
+            }
+            
         }
     }
 }
