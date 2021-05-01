@@ -2,7 +2,7 @@
 #define DICTIONARY_HPP
 
 #include <stdexcept>
-#include "vector.hpp"
+#include "Stack.hpp"
 
 #define DICTIONARY_ALLOCATED_BLOCK 0x10
 
@@ -12,31 +12,14 @@ struct Node
 {
     KeyType key;
     ValueType value;
-    Node<KeyType, ValueType> * left;
-    Node<KeyType, ValueType> * right;
 
     Node() = default;
 
-    ~Node()
-    {
-        left = nullptr;
-        right = nullptr;
-    }
-
-    Node(const Node<KeyType, ValueType> & other)
-    {
-        key = other.key;
-        value = other.value;
-        right = other.right;
-        left = other.left;
-    }
 
     Node& operator=(const Node<KeyType, ValueType> & other)
     {
         key = other.key;
         value = other.value;
-        right = other.right;
-        left = other.left;
         return *this;
     }
 };
@@ -46,57 +29,37 @@ struct Node
 
 
 
-// this is a dictionary type.
-// it is an associative container that contains key-value pairs.
-// This dictionary is built on  a BinarySearchTree, with the 
-// key type being the "weight" for our tree.  This means the tree 
-// will maintain order based on the keys.
 template<typename KeyType, typename ValueType>
 class Dictionary
 {
 private:
+    Node<KeyType, ValueType> *_dataptr;
+    unsigned int _count = 0;
+    unsigned int _allocated = DICTIONARY_ALLOCATED_BLOCK;
+    unsigned int _currentIterator = 0;
+
+    void Reallocate();
 
     Node<KeyType, ValueType> * _root = nullptr;
     
-    Node<KeyType, ValueType> * findKey(const KeyType & key, Node<KeyType, ValueType> * startingNode) const;
-    Node<KeyType, ValueType> * findParent(Node<KeyType, ValueType> *searchedNode, Node<KeyType, ValueType> *currentNode) const;
-
-    void DeletePostOrder(Node<KeyType, ValueType> * startingNode);
-    bool RecursiveInsert(const KeyType & key, const ValueType & value, Node<KeyType, ValueType> * node);
-    void InOrderKeys(Vector<KeyType> & keys, Node<KeyType, ValueType> *currentNode) const;
+    int findKey(const KeyType & key) const;
+    int findParent(const KeyType &key) const;
 
 public:
 
     Dictionary();
     ~Dictionary();
 
-    // inserts the key/value pair into the tree.
-    // returns true if successful, false if NOT successful.
-    // THIS TREE CONTAINS ONLY UNIQUE IDS SO YOU CAN ONLY INSERT 
-    // VALUES THAT HAVE NO KEYS CURRENTLY IN THE LIST
-    bool Insert(const KeyType & key, const ValueType & value);
+    void Insert(const KeyType & key, const ValueType & value);
 
+    ValueType Remove(const KeyType & key);
 
-    // removes the key in question
-    // returns false if the key did not exist
-    // returns true if it did
-    bool Remove(const KeyType & key);
+    Stack<KeyType> Keys() const;
 
-    // creates a vector of keys.  This alows a loopable 
-    // pattern through a normal mechanism of: 
-    // for(int i = 0; i < keys.Size(); i ++)
-    // { 
-    //      ValueType someValueFromKey = Dictionary.At(keys.At(i));
-    // }
-    Vector<KeyType> Keys() const;
-
-    // returns if the dictionary is empty
     bool IsEmpty() const;
 
-    // Checks if a key exists in the tree
     bool Contains(const KeyType & key) const;
 
-    // finds the value with the assosiated key. 
     ValueType At(const KeyType & key) const;
 };
 
@@ -104,346 +67,192 @@ public:
 template<typename KeyType, typename ValueType>
 Dictionary<KeyType, ValueType>::Dictionary()
 {
+    dataptr = new Node<KeyType, ValueType> [_allocated];
+    for(int i = 0; i < _allocated; i++)
+    {
+        _dataptr[i].key = -1;
+    }
 
 }
 
 template<typename KeyType, typename ValueType>
 Dictionary<KeyType, ValueType>::~Dictionary()
 {
-    DeletePostOrder(_root);
+    delete[] _dataptr;
 }
 
 
 template<typename KeyType, typename ValueType>
-bool Dictionary<KeyType, ValueType>::Insert(const KeyType & key, const ValueType & value)
-{
-    // case 1: root is null
-    if(_root == nullptr)
-    {    
-        _root = new Node<KeyType, ValueType>();
-        _root->key = key;
-        _root->value = value;
-        return true;
+void Dictionary<KeyType, ValueType>::Insert(const KeyType & key, const ValueType & value)
+{ 
+    if(_count == _allocated)
+    {
+        Reallocate();
     }
-
-    // case2, use recursive insert to insert the new Node
-    return RecursiveInsert(key, value, _root);
+    if(_count == 0)
+    { 
+        _dataptr[_count].value = value;
+        _dataptr[_count].key = key;
+       _count++;
+        
+        return;
+    }
+    else 
+    {
+        int ind = 0;
+        for(int i = 0; i < _count; i++)
+        {
+            if(key < _dataptr[ind].key)
+            {
+                 ind = (2*ind)+1;
+                if(_dataptr[ind].key == -1)
+                {
+                    _dataptr[ind].value = value;
+                    _dataptr[ind].key = key;
+                    _count++;
+                    return;
+                }
+               
+            }
+            if(key > _dataptr[ind].key)
+            {
+        
+                ind = (2*ind)+2;
+                if(_dataptr[ind].key == -1)
+                {
+                    _dataptr[ind].value = value;
+                    _dataptr[ind].key = key;
+                    _count ++;
+                    return;
+                }
+            }
+        }
+    }
+    return;
 }
 
 template<typename KeyType, typename ValueType>
-bool Dictionary<KeyType, ValueType>::Remove(const KeyType & key)
+ValueType Dictionary<KeyType, ValueType>::Remove(const KeyType & key)
 {
-    Node<KeyType, ValueType> *foundNode = findKey(key, _root);
-    // key not found
-    if(foundNode == nullptr)
+   int loc = findKey(key);
+    if(loc < 0)
     {
-        return false;
-    }
-
-    // case 1: Leaf Node
-    if(foundNode->left == nullptr && foundNode->right == nullptr)
-    {
-        if(foundNode == _root)
-        {
-            delete foundNode;
-            _root = nullptr;
-            return true;
-        }
-
-        Node<KeyType, ValueType> * parent = findParent(foundNode, _root);
-        if(parent != nullptr)
-        {
-            if(parent->left == foundNode)
-            {
-                parent->left = nullptr;
-            }
-            else
-            {
-                parent->right = nullptr;
-            }
-        }
-        delete foundNode;
-        return true;
-    }
-
-    // Case 2: 1 Child right
-    if(foundNode->left == nullptr && foundNode->right != nullptr)
-    {
-        // handle root differently
-        if(foundNode == _root)
-        {
-            _root = foundNode->right;
-            delete foundNode;
-            return true;
-        }
-
-        // otherwise find parent
-        Node<KeyType, ValueType> *parent = findParent(foundNode, _root);
-        if(parent->left == foundNode)
-        {
-            parent->left = foundNode->right;
-        }
-        else
-        {
-            parent->right = foundNode->right;
-        }
-
-        delete foundNode;
-        return true;
-    }
-    // Case 2: 1 Child left
-    if(foundNode->left != nullptr && foundNode->right == nullptr)
-    {
-        // handle root differently
-        if(foundNode == _root)
-        {
-            _root = foundNode->left;
-            delete foundNode;
-            return true;
-        }
-        // otherwise find parent
-        Node<KeyType, ValueType> *parent = findParent(foundNode, _root);
-        if(parent->left == foundNode)
-        {
-            parent->left = foundNode->left;
-        }
-        else
-        {
-            parent->right = foundNode->left;
-        }
-        delete foundNode;
-        return true;
-    }
-
-    // case 3: 2 children
-    // first handle special case 
-    Node<KeyType, ValueType> * next = foundNode->right;
-    if(next->left == nullptr && next->right == nullptr)
-    {
-        foundNode->value = next->value;
-        foundNode->key = next->key;
-        delete next;
-        return true;
-    }
-    if(next->left != nullptr)
-    {
-        Node<KeyType, ValueType> *leftCurrent = foundNode->right;
-        Node<KeyType, ValueType> *leftCurrentN = leftCurrent->left;
-        while(leftCurrentN->left != nullptr)
-        {
-            leftCurrent = leftCurrentN;
-            leftCurrentN = leftCurrentN->left;
-        }
-        foundNode->value = leftCurrentN->value;
-        foundNode->key = leftCurrentN->key;
-        delete leftCurrentN;
-        return true;
-    }
-    else
-    {
-        Node<KeyType, ValueType> *temp = foundNode->right;
-        foundNode->value = temp->value;
-        foundNode->key = temp->key;
-        foundNode->right = temp->right;
-        delete temp;
-        return true;
+        throw new std::range_error("out of bounds error");
     }
     
-    return false;
+    ValueType tmp = _dataptr[loc].value;
+    _dataptr[loc].key = -1;
+    _count --;
+    return tmp;
 }
 
 // 1)   creates a vector of keys
 // 2)   calls InOrderKeys on the root and adds all keys of the tree into the 
 //      vector of Keys.
 template<typename KeyType, typename ValueType>
-Vector<KeyType> Dictionary<KeyType, ValueType>::Keys() const
+Stack<KeyType> Dictionary<KeyType, ValueType>::Keys() const
 {
-    Vector<KeyType> keys;
-    InOrderKeys(keys, _root);
+   
+    Stack<uint32_t> keys; 
+    for(int i = 0; i < _count; i++)
+    {   
+        keys.AddItem(_dataptr[i].key);
 
+    }
+   
     return keys;
 }
 
 template<typename KeyType, typename ValueType>
 bool Dictionary<KeyType, ValueType>::IsEmpty() const
 {   
-    return _root == nullptr;
+    return _count == 0;
 }
 
 template<typename KeyType, typename ValueType>
 bool Dictionary<KeyType, ValueType>::Contains(const KeyType & key) const
 {
-    return findKey(key, _root) != nullptr;
+    return findKey(key) > -1;
 }
 
 template<typename KeyType, typename ValueType>
 ValueType Dictionary<KeyType, ValueType>::At(const KeyType & key) const
 {
-    Node<KeyType, ValueType> * foundNode = findKey(key, _root);
-    if(foundNode == nullptr)
-    {
-        return ValueType();
-    }
-    return foundNode->value;
+    return _dataptr[findKey(key)].value;
 }
 
 template<typename KeyType, typename ValueType>
-Node<KeyType, ValueType> * Dictionary<KeyType, ValueType>::findKey(const KeyType & key, Node<KeyType, ValueType> * startingNode) const
+int Dictionary<KeyType, ValueType>::findKey(const KeyType & key ) const
 {
-    // got a null node somehow
-    if(startingNode == nullptr)
+   if(IsEmpty())
     {
-        return nullptr;
+        return -1;
     }
+    int i = 0 ; 
+    int ind = 0;
 
-    if(startingNode->key == key)
+    // Root 
+    if(_dataptr[i].key == key)
     {
-        return startingNode;
+        return i;
     }
-
-    // left and right nodes are null
-    if(startingNode->left == nullptr && startingNode->right == nullptr)
+    while(i < _count)
     {
-        return nullptr;
-    }
-
-    if(startingNode-> key > key)
-    {
-        if(startingNode->left != nullptr)
+        if(_dataptr[ind].key > key)
         {
-            return findKey(key, startingNode->left);
+            ind = 2*i+1;
+            if(_dataptr[ind].key == key)
+            {
+                return ind;
+            }
         }
-    }
 
-    if(startingNode->key < key)
-    {
-        if(startingNode->right != nullptr)
+        else
         {
-            return findKey(key, startingNode->right);
+            ind = 2*i+2;
+            if(_dataptr[ind].key == key)
+            {
+                return ind;
+            }
         }
+        i++;
     }
-
-    // catch point where if we've gotten here something is wrong.
-    return nullptr;
+    return -1;
 }
 template<typename KeyType, typename ValueType>
-Node<KeyType, ValueType> * Dictionary<KeyType, ValueType>::findParent(Node<KeyType, ValueType> *searchedNode, Node<KeyType, ValueType> *currentNode) const
+int Dictionary<KeyType, ValueType>::findParent(const KeyType & key) const
 {
-    if(searchedNode == _root)
+    if(IsEmpty())
     {
-        return nullptr;
+       return -1;
     }
+   else
+   {
+       int i = findKey(key);
+       if(i < 0)
+       {
+           return -1;
+       }
+       int parent = (i-1)/2;
+       return parent;
 
-    if(currentNode == nullptr)
-    {
-        return nullptr;
     }
-
-    if(currentNode->left != nullptr)
-    {
-        if(currentNode->left == searchedNode)
-        {
-            return currentNode;
-        }
-        if(currentNode->key > searchedNode->key)
-        {
-            return findParent(searchedNode, currentNode->left);
-        }
-    }
-    if(currentNode->right != nullptr)
-    {
-        if(currentNode->right == searchedNode)
-        {
-            return currentNode;
-        }
-        if(currentNode->key < searchedNode->key)
-        {
-            return findParent(searchedNode, currentNode->right);
-        }
-    }
-
-    // somehow we got here and we shouldn't have.
-    return nullptr;
-}
-
-
-template<typename KeyType, typename ValueType>
-void Dictionary<KeyType, ValueType>::DeletePostOrder(Node<KeyType, ValueType> * startingNode)
-{
-    if(startingNode == nullptr)
-    {
-        return;
-    }  
-
-    DeletePostOrder(startingNode->left);
-    startingNode->left = nullptr;
-    DeletePostOrder(startingNode->right);
-    startingNode->right = nullptr;
-    delete startingNode;
+    return -1;
 }
 
 template<typename KeyType, typename ValueType>
-bool Dictionary<KeyType, ValueType>::RecursiveInsert(const KeyType & key, const ValueType & value, Node<KeyType, ValueType> * node)
+void Dictionary<KeyType, ValueType>::Reallocate()
 {
-    // null check hit - something wrong happened
-    if(node == nullptr)
-    {
-        return false;
-    }
-    // immediately exit.
-    if(key == node->key)
-    {
-        return false;
-    }
+    _allocated += DICTIONARY_ALLOCATED_BLOCK;
+    Node<KeyType, ValueType> * tmpList = new Node<KeyType, ValueType>[_allocated];
     
-    // check left
-    if(key < node->key)
+    for(int i = 0; i < _count; i++)
     {
-        if(node->left == nullptr)
-        {
-            Node<KeyType, ValueType> * newNode = new Node<KeyType, ValueType>();
-            newNode->key = key;
-            newNode->value = value;
-            node->left = newNode;
-            return true;
-        }
-        return RecursiveInsert(key, value, node->left);
+        tmpList[i].key = _dataptr[i].key;
+        tmpList[i].value = _dataptr[i].value;
     }
-
-    // check right
-    if(key > node->key)
-    {
-        if(node->right == nullptr)
-        {
-            Node<KeyType, ValueType> * newNode = new Node<KeyType, ValueType>();
-            newNode->key = key;
-            newNode->value = value;
-            node->right = newNode;
-            return true;
-        }
-        return RecursiveInsert(key, value, node->right);    
-    }
-
-
-    // shouldn't ever get here
-    return false;
-}
-
-
-template<typename KeyType, typename ValueType>
-void Dictionary<KeyType, ValueType>::InOrderKeys(Vector<KeyType> & keys, Node<KeyType, ValueType> * currentNode) const
-{
-    if(currentNode == nullptr)
-    {
-        return;
-    }  
-
-    InOrderKeys(keys, currentNode->left);
-
-    keys.Insert(currentNode->key);
-
-    InOrderKeys(keys, currentNode->right);
-    
+    delete _dataptr;
+    _dataptr = tmpList;
 }
 
 #endif
